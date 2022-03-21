@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Paint App</title>
+</head>
+
+<body>
+    <center>
+        <h1>Simple Paint App</h1>
+        <canvas id="myCanvas" width="1000" height="500" style="border: 1px solid black;"></canvas>
+        <br>
+        <!-- <p>Fill Color<input type="color" name="" id="fillColor" value="#000000"></p> -->
+        <button onclick="clearFun()" style="font-size: 16px;padding: 8px 25px;text-align: center;">Clear</button>
+    </center>
+    <script>
+        let canvas, ctx, dragging = false, dragStartLocation;
+        // let fillColor = document.getElementById("fillColor");
+        let getRandomRGB = () => {
+            let r = Math.ceil(Math.random() * 256);
+            let g = Math.ceil(Math.random() * 256);
+            let b = Math.ceil(Math.random() * 256);
+            return 'rgb(' + r + ', ' + g + ', ' + b + ')';
+        }
+
+        let fillColor = getRandomRGB();
+        //Clear canvas
+        const clearFun = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        let changeFillStyle = () => {
+            ctx.fillStyle = getRandomRGB();
+            // ctx.strokeStyle = getRandomRGB();
+            event.stopPropagation();
+
+        }
+
+        let getCanvasCordinate = (event) => {
+            let x = event.clientX - canvas.getBoundingClientRect().left,
+                y = event.clientY - canvas.getBoundingClientRect().top;
+            return { x: x, y: y };
+        }
+
+        let takeSnapshot = () => {
+            snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        }
+
+        let restoreSnapshot = () => {
+            ctx.putImageData(snapshot, 0, 0);
+        }
+
+        let drawLine = (position) => {
+            ctx.beginPath();
+            ctx.moveTo(dragStartLocation.x, dragStartLocation.y);
+            ctx.lineTo(position.x, position.y);
+            ctx.stroke();
+        }
+
+        let drawTri = (position) => {
+            changeFillStyle();
+            ctx.beginPath();
+            let radius = Math.sqrt((Math.pow(dragStartLocation.x - position.x), 2) + Math.pow((dragStartLocation.y - position.y), 2));
+            ctx.moveTo(dragStartLocation.x, dragStartLocation.y);
+            ctx.lineTo(position.x-radius, position.y);
+            ctx.lineTo(position.x+radius, position.y);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.fillStyle = fillColor;
+            ctx.fill();
+        }
+
+        let drawCircle = (position) => {
+            let radius = Math.sqrt((Math.pow(dragStartLocation.x - position.x), 2) + Math.pow((dragStartLocation.y - position.y), 2));
+            ctx.beginPath();
+            ctx.arc(dragStartLocation.x, dragStartLocation.y, radius, 0, 2 * Math.PI, false);
+            ctx.fillStyle = fillColor;
+            ctx.fill();
+        }
+
+        let drawPolygon = (position, sides, angle) => {
+            let coordinates = [],
+                radius = Math.sqrt(Math.pow((dragStartLocation.x - position.x), 2) + Math.pow((dragStartLocation.y - position.y), 2)),
+                index = 0;
+
+            for (index = 0; index < sides; index++) {
+                coordinates.push({ x: dragStartLocation.x + radius * Math.cos(angle), y: dragStartLocation.y - radius * Math.sin(angle) });
+                angle += (2 * Math.PI) / sides;
+            }
+            ctx.beginPath();
+            ctx.moveTo(coordinates[0].x, coordinates[0].y);
+            for (index = 1; index < sides; index++) {
+                ctx.lineTo(coordinates[index].x, coordinates[index].y);
+            }
+
+            ctx.closePath();
+            ctx.fillStyle = fillColor;
+            ctx.fill();
+        }
+
+        let dragStart = (event) => {
+            dragging = true;
+            dragStartLocation = getCanvasCordinate(event);
+            takeSnapshot();
+        }
+
+        let drag = (event) => {
+            let position;
+            if (dragging === true) {
+                restoreSnapshot();
+                position = getCanvasCordinate(event);
+                // drawLine(position);
+                // drawCircle(position);
+                drawTri(position);
+                // drawPolygon(position, 8, Math.PI / 4);
+            }
+        }
+
+        let dragStop = (event) => {
+            dragging = false;
+            restoreSnapshot();
+            let position = getCanvasCordinate(event);
+            // drawLine(position);
+            // drawCircle(position);
+            drawTri(position);
+            // drawPolygon(position, 8, Math.PI / 4);
+            fillColor = getRandomRGB();
+        }
+
+        let init = () => {
+            canvas = document.getElementById("myCanvas");
+            ctx = canvas.getContext('2d');
+            // ctx.strokeStyle = fillColor.value;
+            // ctx.fillStyle = fillColor.value;
+            ctx.lineCap = 'round';
+            ctx.lineWidth = 3;
+            canvas.addEventListener('mousedown', dragStart, false);
+            canvas.addEventListener('mousemove', drag, false);
+            canvas.addEventListener('mouseup', dragStop, false);
+            // fillColor.addEventListener('input', changeFillStyle, false);
+        }
+        window.addEventListener('load', init, false);
+    </script>
+</body>
+
+</html>
